@@ -39,7 +39,7 @@ void MainWindow::on_downloadButton_clicked()
     int w = ui->sourceImage->width();
     int h = ui->sourceImage->height();
     fileName = QFileDialog::getOpenFileName(this,
-        tr("Open Image"), "/", tr("Image Files (*.png *.jpg *.bmp *tif)"));
+        tr("Open Image"), "/home/daria/imagesforsw", tr("Image Files (*.png *.jpg *.bmp *tif)"));
     qDebug() << "url of chosen image is" << fileName;
     QPixmap pix(fileName);
     ui->sourceImage->setPixmap(pix);
@@ -72,6 +72,8 @@ void MainWindow::on_countButton_clicked()
     //fObject.distance();
 
     fObject.visualizeFibers();
+    //fObject.distance();
+
     int check = imwrite("/home/daria/wwwm/test1.jpg", fObject.m_fObjectMatrixDst);
 
     // if the image is not saved

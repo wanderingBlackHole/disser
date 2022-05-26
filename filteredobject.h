@@ -68,6 +68,7 @@ public:
     void startPoints();
 
     void path_opening();
+    void path_opening2();
 
     // Посчитать эффективную площадь среза, занимаемую миокардиальной связью
     float SEffective();

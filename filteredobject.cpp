@@ -2,6 +2,7 @@
 #include <cmath>
 #include <QPixmap>
 #include <QLabel>
+#include <QList>
 
 #include <iostream>
 
@@ -121,7 +122,7 @@ void FilteredObject::postprocessing()
 //     this->dbgForm("Canny", this->m_fObjectMatrixDst, "/home/daria/wwwm/dbg6.jpg");
 
      //Бинаризация
-     double thresh = 50;
+     double thresh = 40;
      double maxValue = 255;
      threshold(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, thresh, maxValue, THRESH_BINARY);
      this->dbgForm("Frangi binary", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi_binary.jpg");
@@ -281,42 +282,50 @@ void FilteredObject::erodeDiliate()
 {
     int erosion_size = 1;
     Mat element = getStructuringElement( MORPH_RECT,
-                         Size( erosion_size+1, erosion_size+1 ),
-                         Point( erosion_size, erosion_size ) );
-    erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
-    dilate( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
-    erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
+                         Size( erosion_size+2, erosion_size+2 ),
+                         Point( -1, -1 ) );
+    //erode( this->m_pathOutput, this->m_pathOutput,element,Point(-1,-1), 1);
+    erode( this->m_pathOutput, this->m_pathOutput,element,Point(-1,-1), 1);
+    this->dbgForm("Erode ", this->m_pathOutput, "/home/daria/wwwm/e.jpg");
+
+    Mat element2 = getStructuringElement( MORPH_RECT,
+                         Size( erosion_size, erosion_size ),Point( -1, -1 ) );
+    dilate( this->m_pathOutput, this->m_pathOutput, element2, Point(-1,-1), 1);
+      this->dbgForm("dilate ", this->m_pathOutput, "/home/daria/wwwm/d.jpg");
+//    dilate( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
+//    erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
     //erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, Mat());
 
-    Mat element1 = getStructuringElement( MORPH_RECT,
-                         Size( erosion_size+3, erosion_size+3 ),
-                         Point( erosion_size, erosion_size ) );
-    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element1);
-    erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
-    this->dbgForm("Erode/dilate ", this->m_fObjectMatrixDst, "/home/daria/wwwm/ede.jpg");
+//    Mat element1 = getStructuringElement( MORPH_RECT,
+//                         Size( erosion_size+3, erosion_size+3 ),
+//                         Point( erosion_size, erosion_size ) );
+//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element1);
+//    erode( this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, element);
+//    this->dbgForm("Erode/dilate ", this->m_fObjectMatrixDst, "/home/daria/wwwm/ede.jpg");
 
 }
-void FilteredObject::erodeDiliate1()
-{
-    int erosion_size = 1;
-    Mat element = getStructuringElement( MORPH_RECT,
-                         Size( erosion_size+2, erosion_size+6 ),
-                         Point( erosion_size, erosion_size ) );
+//void FilteredObject::erodeDiliate1()
+//{
+//    int erosion_size = 1;
+//    Mat element = getStructuringElement( MORPH_RECT,
+//                         Size( erosion_size+2, erosion_size+6 ),
+//                         Point( erosion_size, erosion_size ) );
 
-    Mat element1 = getStructuringElement( MORPH_RECT,
-                         Size( erosion_size+3, erosion_size+3 ),
-                         Point( erosion_size, erosion_size ) );
+//    Mat element1 = getStructuringElement( MORPH_RECT,
+//                         Size( erosion_size+3, erosion_size+3 ),
+//                         Point( erosion_size, erosion_size ) );
 
-    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element);
-    this->dbgForm("CLOSE", this->m_fObjectMatrixDst, "/home/daria/wwwm/close.jpg");
+//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element);
+//    this->dbgForm("CLOSE", this->m_fObjectMatrixDst, "/home/daria/wwwm/close.jpg");
 
-    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_OPEN ,element1);
-    this->dbgForm("OPEN", this->m_fObjectMatrixDst, "/home/daria/wwwm/open.jpg");
+//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_OPEN ,element1);
+//    this->dbgForm("OPEN", this->m_fObjectMatrixDst, "/home/daria/wwwm/open.jpg");
 
-}
+//}
 void FilteredObject::dstOverlaid()
 {
     this->visualizeFibers();
+    this->path_opening();
     this->m_fObjectMatrixTmp.convertTo(this->m_fObjectMatrixTmp, CV_8UC3);
     cvtColor(this->m_fObjectMatrixTmp, this->m_fObjectMatrixTmp, COLOR_GRAY2RGB);
     //this->m_fObjectMatrixDst = this->m_fObjectMatrixDst + this->m_fObjectMatrixTmp;
@@ -376,182 +385,232 @@ void FilteredObject::path_opening()
 
         this->m_fObjectPathURL = outputFileName;
 
-//        // Deallocate
-//        delete[] input_image;
-//        delete[] output_image;
-//        BIMAGE_destructor(input_bimage);
-//        BIMAGE_destructor(output_bimage);
+        // Deallocate
+        delete[] input_image;
+        delete[] output_image;
+        BIMAGE_destructor(input_bimage);
+        BIMAGE_destructor(output_bimage);
 
     //this->dbgForm("HUGUE OPENING PATH", this->m_pathOutput, "/home/daria/wwwm/path_output.jpg");
     /*--------------------------------------------------------------------------------------------------------------*/
 
 }
 
-void FilteredObject::startPoints()
+void FilteredObject::path_opening2()
 {
-    Mat mask;
-    Mat element = getStructuringElement( MORPH_RECT,
-                         Size( 9, 9 )
-                          );
-    // начальные точки определяются как максимумы яркости функции расстояния
-    cv::dilate(this->m_fObjectMatrixDst, mask, element);
-    cv::compare(this->m_fObjectMatrixDst, mask, mask, cv::CMP_GE);
+//    unsigned char   *input_image;         /* The input image */
+//    int             nx, ny;               /* Image dimensions */
+//    int             L;                    /* The threshold line length */
+//    int             K;                    /* The maximum number of gaps in the path */
+//    unsigned char   *output_image ;       /* Output image */
 
-    cv::Mat non_plateau_mask;
-           cv::erode(this->m_fObjectMatrixDst, non_plateau_mask, element);
-           cv::compare(this->m_fObjectMatrixDst, non_plateau_mask, non_plateau_mask, cv::CMP_GT);
-           cv::bitwise_and(mask, non_plateau_mask, mask);
 
-           Scalar color(0,0,255);
-       //convert grayscale to color image
-          cvtColor(mask, mask, COLOR_GRAY2RGB);
-          for(int i = 0; i < mask.rows; i++)
-          {
-              for(int j = 0; j < mask.cols; j++)
-              {
-                  if((mask.at<cv::Vec3b>(i,j)[0] != 0) && (mask.at<cv::Vec3b>(i,j)[1] != 0) && (mask.at<cv::Vec3b>(i,j)[2] != 0))
-                  {
-//                      mask.at<cv::Vec3b>(i,j)[0] = 0;
-//                      mask.at<cv::Vec3b>(i,j)[1] = 0;
-//                      mask.at<cv::Vec3b>(i,j)[2] = 255;
 
-                      this->m_startP.push_back({i,j});
-                  }
 
-              }
-          }
+    //pathopen(this->m_fObjectURLCharSrc,nx,ny,L,K,output_image);
 
-          this->m_fObjectMatrixDst.convertTo(this->m_fObjectMatrixDst, CV_8UC3);
-          cvtColor(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, COLOR_GRAY2RGB);
-          this->contrast(this->m_fObjectMatrixDst, 255,5);
-          this->contrast(mask, 255,5);
+    /*--------------------------------------------------------------------------------------------------------------*/
 
-          mask.convertTo(mask, CV_8UC3);
 
-          addWeighted (mask, 0.8, this->m_fObjectMatrixDst, 0.2, 0.0, this->m_fObjectMatrixDst);
+    const char* currentPath = "/home/daria/wwwm";
+    const char* currentFileName = "/home/daria/wwwm/pop2.jpg";
+    const char* outputFileName = "/home/daria/wwwm/pop2PATH.jpg";
 
-    this->dbgForm("Start points", mask, "/home/daria/wwwm/start_points.jpg");
+
+    /* Open an image from file */
+        BIMAGE * input_bimage = read_grayscale_image(currentPath, currentFileName);
+        // Allocate remaining images
+        BIMAGE * output_bimage = BIMAGE_constructor(input_bimage->dim);
+        int nx = input_bimage->dim->buf[0];
+        int ny = input_bimage->dim->buf[1];
+            int num_pixels = nx*ny;
+        PATHOPEN_PIX_TYPE * input_image = new PATHOPEN_PIX_TYPE[nx * ny];
+        PATHOPEN_PIX_TYPE * output_image = new PATHOPEN_PIX_TYPE[nx * ny];
+
+    // Convert intermediate float to PATHOPEN_PIX_TYPE (unsigned char)
+    for (int i = 0; i < num_pixels; ++i) {
+        input_image[i] = static_cast<PATHOPEN_PIX_TYPE>(input_bimage->buf[i]);
+    }
+
+    int L = 27;
+    int K = 0;
+
+   pathopen(input_image, nx, ny, L, K, output_image);
+
+    for (int i = 0; i < num_pixels; ++i) {
+                output_bimage->buf[i] = static_cast<PATHOPEN_PIX_TYPE>(output_image[i]);
+        }
+        // Write file
+        write_grayscale_image(
+            output_bimage,
+            outputFileName
+        );
+    /*--------------------------------------------------------------------------------------------------------------*/
 
 }
 
+
 void FilteredObject::distance()
 {
+    cv::Mat src = cv::imread("/home/daria/wwwm/FIBERS.jpg");
+    if(!src.data)
+        return;
 
-//    this->m_fObjectMatrixDst.convertTo(this->m_fObjectMatrixDst, CV_8UC1);
-    distanceTransform(this->m_pathOutput, this->m_pathOutput, DIST_L2, CV_32F);
-        this->m_pathOutput.convertTo(this->m_pathOutput, -1, 5,5);
-    this->dbgForm("Distance ", this->m_pathOutput, "/home/daria/wwwm/dist.jpg");
-//    GaussianBlur(this->m_pathOutput, this->m_pathOutput, Size( 7, 7 ), 0, 0 );
-//    this->contrast(this->m_pathOutput, 255,5);
-//    this->dbgForm("Gaussian blur after distance", this->m_pathOutput, "/home/daria/wwwm/gau_blur_dist.jpg");
-
-    //Бинаризация
-    double thresh = 15 ;
-    double maxValue = 255;
-    threshold(this->m_pathOutput, this->m_pathOutput, thresh, maxValue, THRESH_BINARY);
-   this->dbgForm("PATH after distance binary", this->m_pathOutput, "/home/daria/wwwm/path_after_distance_binary.jpg");
-
-//    int erosion_size = 1;
-
-//    Mat element = getStructuringElement( MORPH_RECT,
-//                         Size( erosion_size, erosion_size+5 )
-//                         );
+    cv::Mat bw;
+    cv::cvtColor(src,bw,COLOR_BGR2GRAY);
+    cv::threshold(bw,bw,40,255,THRESH_BINARY);
+    this->dbgForm("FIBERS BINARY", bw, "/home/daria/wwwm/fibers_bw.jpg");
 
 
-
-//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element);
-//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE ,element);
-//    Mat element1 = getStructuringElement( MORPH_RECT,
-//                         Size( erosion_size+1, erosion_size+1 )
-//                         );
-
-//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_OPEN ,element1);
-//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_OPEN ,element1);
-//    morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_OPEN ,element1);
-//    this->dbgForm("Erode/dilate ", this->m_fObjectMatrixDst, "/home/daria/wwwm/ede .jpg");
-
-//    this->m_fObjectMatrixDst.convertTo(this->m_fObjectMatrixDst, CV_8UC1);
-//    // sure background
-//    Mat background;
-//    dilate(this->m_fObjectMatrixDst, background, Mat());
-//    // sure foreground
-//    Mat foreground;
-//    Mat distance;
-//    distanceTransform(this->m_fObjectMatrixDst, distance, DIST_L2, CV_32F);
-//    distance.convertTo(distance, -1, 255,5);
-//    this->dbgForm("Distance ", distance, "/home/daria/wwwm/dist.jpg");
-//    qDebug() << "distance type " << distance.type();
-//    threshold(distance, foreground, 100, 255, THRESH_BINARY);
-
-//    background.convertTo(background, CV_32F);
-
-//    Mat hz;
-//    qDebug() << "rows of background = " << background.rows << "cols = " << background.cols << "type" << background.type();
-//    qDebug() << "rows of foreground = " << foreground.rows << "cols = " << foreground.cols << "type" << foreground.type();
-
-//    this->m_fObjectMatrixDst.convertTo(this->m_fObjectMatrixDst, CV_32F);
-
-//    subtract(background,foreground, this->m_fObjectMatrixDst);
-
-
-
-
-    //this->contrast(this->m_fObjectMatrixDst, 500, 5);
-    //normalize(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, 0, 1, NORM_MINMAX);
 }
 
 void FilteredObject::visualizeFibers()
 {
+//    this->erodeDiliate();
+//    this->path_opening2();
     //Бинаризация
-    double thresh = 50;
+
+    double thresh = 10;
     double maxValue = 255;
     threshold(this->m_pathOutput, this->m_pathOutput, thresh, maxValue, THRESH_BINARY);
-    GaussianBlur(this->m_pathOutput, this->m_pathOutput, Size( 7, 7 ), 0, 0 );
+    //GaussianBlur(this->m_pathOutput, this->m_pathOutput, Size( 7, 7 ), 0, 0 );
     this->m_pathOutput.convertTo(this->m_pathOutput, CV_8UC3);
 
-         //int numberOfContours = 0;
-         std::vector<std::vector<Point>> contours;
-//         Scalar color(0,0,255);
 
-         findContours(this->m_pathOutput, contours, RETR_TREE, CHAIN_APPROX_SIMPLE);
+         std::vector<std::vector<Point>> allCont; // все контуры
+         std::vector<std::vector<Point>> divCont; // разбитые на несколько контуров изначально длинные контуры
 
-     //convert grayscale to color image
-        cvtColor(this->m_pathOutput, this->m_pathOutput, COLOR_GRAY2RGB);
+         findContours(this->m_pathOutput, allCont, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
-        for (unsigned long cont = 0; cont < contours.size(); cont++)
+         std::vector<std::vector<Point>> shortCont(allCont); // сюда сложим все кроме изначально длинных контуров
+         qDebug() <<"allCont.size()"<< allCont.size();
+         qDebug() <<"shortCont.size()"<< shortCont.size();
+         QList<unsigned long> delete_list = {};
+
+         cvtColor(this->m_pathOutput, this->m_pathOutput, COLOR_GRAY2RGB);
+
+/*---------------------------CHECKING TOO BIG CONTOURS AGAIN--------------------------------------*/
+        for (unsigned long cont = 0; cont < allCont.size(); cont++)
         {
+
             uint8_t first = QRandomGenerator::global()->bounded(0, 255);
             uint8_t second = QRandomGenerator::global()->bounded(0, 255);
             uint8_t third = QRandomGenerator::global()->bounded(0, 255);
             Scalar color(first,second,third);
-            drawContours(this->m_pathOutput, contours, cont, color, FILLED);
+            Scalar colorRect(0,0,255);
+
+            int max_sz = 500;
+
+            if (cv::arcLength(allCont.at(cont), true) > max_sz) // если периметр контура слишком большой, проверим его....
+                                                                // может, там скрывается еще один контур...... или два)))))))))
+            {
+                qDebug()<< "need to erase" << cont;
+                delete_list.append(cont);
+                //contours.erase(contours.begin()+cont);
+                int erosion_size = 1;
+                Mat element = getStructuringElement( MORPH_RECT,
+                                     Size( erosion_size+2, erosion_size+2 ),
+                                     Point( -1, -1 ) );
+
+//                int x1 = boundingRect(allCont.at(cont)).x;
+//                int x2 = boundingRect(allCont.at(cont)).x + boundingRect(allCont.at(cont)).width;
+//                int y1 = boundingRect(allCont.at(cont)).y;
+//                int y2 = boundingRect(allCont.at(cont)).y + boundingRect(allCont.at(cont)).height;
+
+//                // очертим контур, с которым сейчас работаем, прямоугольником
+//                rectangle( this->m_pathOutput, Point(x1,y1) , Point(x2,y2) , colorRect, 2);
+
+                Mat tempArea;
+                Mat mask (this->m_pathOutput.size(), CV_8UC1, Scalar(0));
+
+                drawContours(mask, allCont, cont, Scalar(255), FILLED);
+                this->m_pathOutput.copyTo(tempArea, mask);
+
+                cvtColor(tempArea, tempArea, COLOR_RGB2GRAY);
+                // сузим контур чтобы выявить потенциальные точки соприкосновения
+                erode( tempArea, tempArea, element, Point(-1,-1), 1);
+                // попробуем сделать из большого контура несколько контуров (нет так нет)
+                //this->dbgForm("For pop2", tempArea, "/home/daria/wwwm/pop2.jpg");
+                this->path_opening2();
+                findContours(tempArea, divCont, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); // и сохраним их в векторе divCont
+
+
+                cvtColor(tempArea, tempArea, COLOR_GRAY2RGB);
+                // нарисуем найденные разделенные контуры
+                for (unsigned long contdiv = 0; contdiv < divCont.size(); contdiv++)
+                {
+                    uint8_t firstl = QRandomGenerator::global()->bounded(0, 255);
+                    uint8_t secondl = QRandomGenerator::global()->bounded(0, 255);
+                    uint8_t thirdl = QRandomGenerator::global()->bounded(0, 255);
+                    Scalar colordiv(firstl,secondl,thirdl);
+                    drawContours(this->m_pathOutput, divCont, contdiv, colordiv, FILLED);
+                }
+                //shortCont.erase(shortCont.begin() + cont);
+
+                //this->dbgForm("Only long Fibers", tempArea, "/home/daria/wwwm/LONGF.jpg");
+            } // конец проверки длинных контуров
+
+            //drawContours(this->m_pathOutput, shortCont, cont, color, FILLED);
+
         }
-        this->dbgForm("Fibers", this->m_pathOutput, "/home/daria/wwwm/FIBERS.jpg");
-
-        this->m_fObjectMatrixTmp.convertTo(this->m_fObjectMatrixTmp, CV_8UC3);
-        cvtColor(this->m_fObjectMatrixTmp, this->m_fObjectMatrixTmp, COLOR_GRAY2RGB);
-//        this->dbgForm("tmp", this->m_fObjectMatrixTmp, "/home/daria/wwwm/dbg8.jpg");
-
-
-        addWeighted (this->m_fObjectMatrixTmp, 0.4, this->m_pathOutput, 0.6, 0.0, this->m_fObjectMatrixDst);
-
-
-int numberOfContours = 0;
-
-        for (unsigned long i = 0; i < contours.size(); i++)
+        std::vector<std::vector<Point>>::iterator iter = shortCont.begin();
+        for (int i = 0; i < delete_list.size(); i++)
         {
-                numberOfContours +=1;
-//        //morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE, contours[i]);
+            iter += delete_list[i];
+            shortCont.erase(iter);
+            qDebug()<< "erasing " << delete_list[i];
         }
+                 qDebug() <<"shortCont.size()"<< shortCont.size();
+
+/*---------------------------------------------------------------------------------------------------*/
+        this->dbgForm("Only long Fibers", this->m_pathOutput, "/home/daria/wwwm/LONGF.jpg");
+
+//        for (unsigned long scont = 0; scont < shortCont.size(); scont++)
+//        {
+////            Mat tempArea;
+////            Mat mask (this->m_pathOutput.size(), CV_8UC1, Scalar(0));
+
+////            drawContours(mask, shortCont, scont, Scalar(255), FILLED);
+////            this->m_pathOutput.copyTo(tempArea, mask);
+
+//            uint8_t firsts = QRandomGenerator::global()->bounded(0, 255);
+//                        uint8_t seconds = QRandomGenerator::global()->bounded(0, 255);
+//                        uint8_t thirds = QRandomGenerator::global()->bounded(0, 255);
+//                        Scalar colors(firsts,seconds,thirds);
+//            drawContours(this->m_pathOutput, shortCont, scont, colors, FILLED);
+//        }
 
 
-        float s = this->SEffective();
-        float relNumb = numberOfContours/s;
-        qDebug() << "number of fibers = " << numberOfContours;
-        qDebug() << "relative number of bibers = " << relNumb;
+        //Mat ccc (this->m_pathOutput.size(), CV_8UC1, Scalar(0));
+        Scalar colors(0,0,255);
+                  drawContours(this->m_pathOutput, shortCont, -1, colors, 3);
+        this->dbgForm("ALLFibers", this->m_pathOutput, "/home/daria/wwwm/ALLFIBERS.jpg");
 
-this->m_numberOfCont = numberOfContours;
-this->m_relnumberOfCont = relNumb;
+
+//        this->m_fObjectMatrixTmp.convertTo(this->m_fObjectMatrixTmp, CV_8UC3);
+//        cvtColor(this->m_fObjectMatrixTmp, this->m_fObjectMatrixTmp, COLOR_GRAY2RGB);
+////        this->dbgForm("tmp", this->m_fObjectMatrixTmp, "/home/daria/wwwm/dbg8.jpg");
+
+
+//        addWeighted (this->m_fObjectMatrixTmp, 0.4, this->m_pathOutput, 0.6, 0.0, this->m_fObjectMatrixDst);
+
+
+//int numberOfContours = 0;
+
+//        for (unsigned long i = 0; i < contours.size(); i++)
+//        {
+//                numberOfContours +=1;
+////        //morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE, contours[i]);
+//        }
+
+
+//        float s = this->SEffective();
+//        float relNumb = numberOfContours/s;
+//        qDebug() << "number of fibers = " << numberOfContours;
+//        qDebug() << "relative number of bibers = " << relNumb;
+
+//this->m_numberOfCont = numberOfContours;
+//this->m_relnumberOfCont = relNumb;
 
 
 
