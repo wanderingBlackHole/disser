@@ -466,14 +466,10 @@ void FilteredObject::distance()
 
 void FilteredObject::visualizeFibers()
 {
-//    this->erodeDiliate();
-//    this->path_opening2();
     //Бинаризация
-
     double thresh = 10;
     double maxValue = 255;
     threshold(this->m_pathOutput, this->m_pathOutput, thresh, maxValue, THRESH_BINARY);
-    //GaussianBlur(this->m_pathOutput, this->m_pathOutput, Size( 7, 7 ), 0, 0 );
     this->m_pathOutput.convertTo(this->m_pathOutput, CV_8UC3);
 
 
@@ -490,6 +486,7 @@ void FilteredObject::visualizeFibers()
          cvtColor(this->m_pathOutput, this->m_pathOutput, COLOR_GRAY2RGB);
          Mat copyOfMPath;
          this->m_pathOutput.copyTo(copyOfMPath);
+         this->dbgForm("BEFORE", copyOfMPath, "/home/daria/wwwm/BEFORE.jpg");
 
 /*---------------------------CHECKING TOO BIG CONTOURS AGAIN--------------------------------------*/
         for (unsigned long cont = 0; cont < allCont.size(); cont++)
@@ -509,6 +506,7 @@ void FilteredObject::visualizeFibers()
                 qDebug()<< "need to erase" << cont;
                 delete_list.append(cont);
                 drawContours(copyOfMPath, allCont, cont, colorBlack, FILLED);
+                this->dbgForm("DELETE LONG FIBERS FROM SOURCE", copyOfMPath, "/home/daria/wwwm/delete_longf.jpg");
                 //contours.erase(contours.begin()+cont);
                 int erosion_size = 1;
                 Mat element = getStructuringElement( MORPH_RECT,
@@ -520,31 +518,34 @@ void FilteredObject::visualizeFibers()
                 int y1 = boundingRect(allCont.at(cont)).y;
                 int y2 = boundingRect(allCont.at(cont)).y + boundingRect(allCont.at(cont)).height;
 
-//                Size roi_size = cv::Size(boundingRect(allCont.at(cont)).width, boundingRect(allCont.at(cont)).height);
-//                Point roi_start_point = cv::Point(x1, y1);
-//                this->m_pathOutput.locateROI(roi_size, roi_start_point);
-
-
-                //this->dbgForm("FUCKING ROI????????", this->m_pathOutput, "/home/daria/wwwm/FUCKING_ROI.jpg");
+                int col_start = x1;
+                int row_start = y1;
+                qDebug()<< "col_start = "<< col_start << "row_start = " << row_start;
 
 
                 Rect roi(x1,y1,x2-x1,y2-y1);
                 Mat image_roi (this->m_pathOutput,roi);
+//this->dbgForm("SOURCE ROI", image_roi, "/home/daria/wwwm/source_roi.jpg");
+                std::vector<std::vector<Point>> roiCont; // контуры в ROI
+                cvtColor(image_roi, image_roi, COLOR_RGB2GRAY);
+                findContours(image_roi, roiCont, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+                // удалим попавшие в roi "нормальные" контуры
+                for (unsigned long roic = 0; roic < roiCont.size(); roic++)
+                {
+                     if (cv::arcLength(roiCont.at(roic), true) < max_sz)
+                         drawContours(image_roi, roiCont, roic, colorBlack, FILLED);
+                }
 
-
-
-                //this->dbgForm("ROI", image_roi, "/home/daria/wwwm/ROI.jpg");
 
 
 //                // очертим контур, с которым сейчас работаем, прямоугольником
 //                rectangle( this->m_pathOutput, Point(x1,y1) , Point(x2,y2) , colorRect, 2);
-
-
-                cvtColor(image_roi, image_roi, COLOR_RGB2GRAY);
+//this->dbgForm("RECTANGLES", this->m_pathOutput, "/home/daria/wwwm/RECTANGLES.jpg");
                 // сузим контур чтобы выявить потенциальные точки соприкосновения
                 erode( image_roi, image_roi, element, Point(-1,-1), 1);
+
                 // попробуем сделать из большого контура несколько контуров (нет так нет)
-                this->dbgForm("For pop2", image_roi, "/home/daria/wwwm/pop2.jpg");
+                this->dbgForm("ERODE ROI", image_roi, "/home/daria/wwwm/pop2.jpg");
 
                 this->path_opening2();
 
@@ -570,114 +571,84 @@ void FilteredObject::visualizeFibers()
                     drawContours(image_roi, divCont, contdiv, colordiv, FILLED);
                 }
 
-                this->dbgForm("After pop2", image_roi, "/home/daria/wwwm/AFTERpop2.jpg");
+                this->dbgForm("ROI FIXED", image_roi, "/home/daria/wwwm/AFTERpop2.jpg");
+
+                qDebug() << "boundingRect(allCont.at(cont)).width = " << boundingRect(allCont.at(cont)).width << "boundingRect(allCont.at(cont)).height" << boundingRect(allCont.at(cont)).height;
+                // скопируем обработанные волокна обратно на исходное изображение
+                qDebug() << "image_roi.rows = " <<image_roi.rows << "image_roi.cols = " << image_roi.cols;
+                qDebug() << "copyOfMPath.rows = " << copyOfMPath.rows << " copyOfMPath.cols = " << copyOfMPath.cols;
+
+                for (int roi_row = 0; roi_row < boundingRect(allCont.at(cont)).height; roi_row++)
+                {
+
+                    col_start = x1;
+                    for (int roi_col = 0; roi_col < boundingRect(allCont.at(cont)).width; roi_col++)
+                    {
+
+                        if((image_roi.at<cv::Vec3b>(roi_row,roi_col)[0] != 0) && (image_roi.at<cv::Vec3b>(roi_row,roi_col)[1] != 0) && (image_roi.at<cv::Vec3b>(roi_row,roi_col)[2] != 0))
+                            image_roi.row(roi_row).col(roi_col).copyTo(copyOfMPath.row(row_start).col(col_start));
+                        else
+                            copyOfMPath.row(row_start).col(col_start).copyTo(copyOfMPath.row(row_start).col(col_start));
 
 
-                Rect srcRect(Point(0, 0), Size(boundingRect(allCont.at(cont)).width, boundingRect(allCont.at(cont)).height));
-                Rect dstRect(Point(x1, y1), srcRect.size() ); //destination in (3,5), size same as srcRect
+                           qDebug() << "roi_row = " << roi_row << "roi_col = " << roi_col;
+                           col_start++;
+                           qDebug() << "col_start = " << col_start;
+                    }
+                    row_start++;
+                    qDebug() << "row_start = " << row_start;
+                }
 
-                image_roi(srcRect).copyTo(copyOfMPath(dstRect)); //copy from (0,1) to (3,5) max allowed cols
+//                Rect srcRect(Point(0, 0), Size(boundingRect(allCont.at(cont)).width, boundingRect(allCont.at(cont)).height));
+//                Rect dstRect(Point(x1, y1), srcRect.size() ); //destination in (3,5), size same as srcRect
 
+//                image_roi(srcRect).copyTo(copyOfMPath(dstRect));
 
-                 //Rect roiToCpy(this->m_pathOutput, 0, 0, image_roi.rows, image_roi.cols);
-
-//Mat buf(this->m_pathOutput.size(), CV_8UC1);
-//                image_roi.copyTo(buf);
-                //shortCont.erase(shortCont.begin() + cont);
-
-
-
-                //cvtColor(image_roi, image_roi, COLOR_RGB2GRAY);
-                //Mat buf(this->m_pathOutput.size(), CV_8UC1);
-                //qDebug() << image_roi.datastart();
-                //cv::add(this->m_pathOutput, image_roi, this->m_pathOutput, NULL);
             } // конец проверки длинных контуров
 
-            //drawContours(this->m_pathOutput, shortCont, cont, color, FILLED);
 
         }
-        this->dbgForm("FUCK THIS", copyOfMPath, "/home/daria/wwwm/FUCK.jpg");
+        // посчитаем окончательное число волокон и раскрасим их
+        cvtColor(copyOfMPath, copyOfMPath, COLOR_RGB2GRAY);
+        std::vector<std::vector<Point>> normCont; // обработанные контуры
+        findContours(copyOfMPath, normCont, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+        cvtColor(copyOfMPath, copyOfMPath, COLOR_GRAY2RGB);
+        for (unsigned long nc = 0; nc < normCont.size(); nc++)
+        {
+            uint8_t firstl = QRandomGenerator::global()->bounded(0, 255);
+            uint8_t secondl = QRandomGenerator::global()->bounded(0, 255);
+            uint8_t thirdl = QRandomGenerator::global()->bounded(0, 255);
+            Scalar colornc(firstl,secondl,thirdl);
+            drawContours(copyOfMPath, normCont, nc, colornc, FILLED);
+        }
+
+        this->dbgForm("AFTER", copyOfMPath, "/home/daria/wwwm/AFTER.jpg");
 
 
-       // Rect roi(this->m_pathOutput, 0, 0, image_roi.width(), image_roi.height());
+        /*---------------------------------------------------------------------------------------------------*/
+
+        // наложим выделенные волокна на исходное изображение
+        this->m_fObjectMatrixTmp.convertTo(this->m_fObjectMatrixTmp, CV_8UC3);
+        cvtColor(this->m_fObjectMatrixTmp, this->m_fObjectMatrixTmp, COLOR_GRAY2RGB);
+        addWeighted (this->m_fObjectMatrixTmp, 0.4, copyOfMPath, 0.6, 0.0, this->m_fObjectMatrixDst);
+
+        // посчитаем волокна
+        int numberOfContours = 0;
+
+        for (unsigned long i = 0; i < normCont.size(); i++)
+        {
+                numberOfContours +=1;
+        }
 
 
+        float s = this->SEffective();
+        float relNumb = numberOfContours/s;
+        qDebug() << "number of fibers = " << numberOfContours;
+        qDebug() << "relative number of bibers = " << relNumb;
 
-
-
-
-        //cvtColor(copyOfMPath, copyOfMPath, COLOR_GRAY2RGB);
-        //copyOfMPath.convertTo(copyOfMPath, CV_8UC3);
-//                std::vector<std::vector<Point>>::iterator iter = shortCont.begin();
-//                for (int i = 0; i < delete_list.size(); i++)
-//                {
-//                    iter += delete_list[i];
-//                    shortCont.erase(iter);
-//                    qDebug()<< "erasing " << delete_list[i];
-//        //            //Scalar color (0,0,0);
-//        //            //drawContours(this->m_pathOutput, shortCont, delete_list[i], color, FILLED);
-//                }
-//        //                 qDebug() <<"shortCont.size()"<< shortCont.size();
-//                    for (unsigned long cont = 0; cont < shortCont.size(); cont++)
-//                    {
-
-//                        uint8_t first = QRandomGenerator::global()->bounded(0, 255);
-//                        uint8_t second = QRandomGenerator::global()->bounded(0, 255);
-//                        uint8_t third = QRandomGenerator::global()->bounded(0, 255);
-//                        Scalar color(first,second,third);
-//                        drawContours(copyOfMPath, shortCont, cont, color, FILLED);
-//                    }
-
-//        this->dbgForm("FUCK THIS TOO", copyOfMPath, "/home/daria/wwwm/FUCK2.jpg");
-        ///*---------------------------------------------------------------------------------------------------*/
-        //        this->dbgForm("Only long Fibers", this->m_pathOutput, "/home/daria/wwwm/LONGF.jpg");
-
-        ////        for (unsigned long scont = 0; scont < shortCont.size(); scont++)
-        ////        {
-        //////            Mat tempArea;
-        //////            Mat mask (this->m_pathOutput.size(), CV_8UC1, Scalar(0));
-
-        //////            drawContours(mask, shortCont, scont, Scalar(255), FILLED);
-        //////            this->m_pathOutput.copyTo(tempArea, mask);
-
-        ////            uint8_t firsts = QRandomGenerator::global()->bounded(0, 255);
-        ////                        uint8_t seconds = QRandomGenerator::global()->bounded(0, 255);
-        ////                        uint8_t thirds = QRandomGenerator::global()->bounded(0, 255);
-        ////                        Scalar colors(firsts,seconds,thirds);
-        ////            drawContours(this->m_pathOutput, shortCont, scont, colors, FILLED);
-        ////        }
-
-
-        //        //Mat ccc (this->m_pathOutput.size(), CV_8UC1, Scalar(0));
-        //        Scalar colors(0,0,255);
-        //                  drawContours(this->m_pathOutput, shortCont, -1, colors, 3);
-        //        this->dbgForm("ALLFibers", this->m_pathOutput, "/home/daria/wwwm/ALLFIBERS.jpg");
-
-
-//        this->m_fObjectMatrixTmp.convertTo(this->m_fObjectMatrixTmp, CV_8UC3);
-//        cvtColor(this->m_fObjectMatrixTmp, this->m_fObjectMatrixTmp, COLOR_GRAY2RGB);
-////        this->dbgForm("tmp", this->m_fObjectMatrixTmp, "/home/daria/wwwm/dbg8.jpg");
-
-
-//        addWeighted (this->m_fObjectMatrixTmp, 0.4, this->m_pathOutput, 0.6, 0.0, this->m_fObjectMatrixDst);
-
-
-//int numberOfContours = 0;
-
-//        for (unsigned long i = 0; i < contours.size(); i++)
-//        {
-//                numberOfContours +=1;
-////        //morphologyEx(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, MORPH_CLOSE, contours[i]);
-//        }
-
-
-//        float s = this->SEffective();
-//        float relNumb = numberOfContours/s;
-//        qDebug() << "number of fibers = " << numberOfContours;
-//        qDebug() << "relative number of bibers = " << relNumb;
-
-//this->m_numberOfCont = numberOfContours;
-//this->m_relnumberOfCont = relNumb;
+this->m_numberOfCont = numberOfContours;
+this->m_relnumberOfCont = relNumb;
 
 
 
