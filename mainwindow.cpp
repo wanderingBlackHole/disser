@@ -6,6 +6,8 @@
 #include "filteredobject.h"
 #include "pathopen.h"
 
+#include <QGraphicsEffect>
+
 QString fileName;
 String filename;
 Mat markerMask;
@@ -18,15 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
     this->setWindowTitle("What's wrong with the mouse?");
     this->setWindowIcon(QIcon("/home/daria/wwwm/icon.jpg"));
 
-//    this->setStyleSheet("background-color: beige;");
-
-//    const char* currentPath = "/home/daria/qtdis";
-//    const char* currentFileName = "/home/daria/qtdis/testOpeningPath.jpeg";
-
-//    Mat src = imread(currentFileName, IMREAD_GRAYSCALE);
-//    Magick::Image mgk(src.cols, src.rows, "BGRA", CharPixel, (char *)src.data);
-
-    //read_grayscale_image(currentPath , currentFileName);
+    ui->MaxSize->setCurrentText("500");
+    ui->ErodeKernel->setCurrentText("3,3");
 }
 
 MainWindow::~MainWindow()
@@ -68,11 +63,7 @@ void MainWindow::on_countButton_clicked()
 
     fObject.SETpathOutput(imread(fObject.m_fObjectPathURL, IMREAD_GRAYSCALE));
 
-
-    //fObject.distance();
-
     fObject.visualizeFibers();
-    //fObject.distance();
 
     int check = imwrite("/home/daria/wwwm/test1.jpg", fObject.m_fObjectMatrixDst);
 

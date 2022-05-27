@@ -591,18 +591,13 @@ void FilteredObject::visualizeFibers()
                             copyOfMPath.row(row_start).col(col_start).copyTo(copyOfMPath.row(row_start).col(col_start));
 
 
-                           qDebug() << "roi_row = " << roi_row << "roi_col = " << roi_col;
+                           //qDebug() << "roi_row = " << roi_row << "roi_col = " << roi_col;
                            col_start++;
-                           qDebug() << "col_start = " << col_start;
+                           //qDebug() << "col_start = " << col_start;
                     }
                     row_start++;
-                    qDebug() << "row_start = " << row_start;
+                    //qDebug() << "row_start = " << row_start;
                 }
-
-//                Rect srcRect(Point(0, 0), Size(boundingRect(allCont.at(cont)).width, boundingRect(allCont.at(cont)).height));
-//                Rect dstRect(Point(x1, y1), srcRect.size() ); //destination in (3,5), size same as srcRect
-
-//                image_roi(srcRect).copyTo(copyOfMPath(dstRect));
 
             } // конец проверки длинных контуров
 
