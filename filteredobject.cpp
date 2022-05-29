@@ -13,9 +13,22 @@
 FilteredObject::FilteredObject()
 {
 }
+void FilteredObject::clear()
+{
+        for (int i = 0; i < dbgForms.size(); i++)
+        {
+            qDebug() << "deleting " << i;
+            delete dbgForms.at(i);
+        }
+}
+void FilteredObject::saveToLocal(Mat image, QString dbgSave)
+{
+    imwrite(dbgSave.toStdString(), image);
+}
 void FilteredObject::dbgForm(QString name, Mat image, QString dbgSave)
 {
     QWidget *form = new QWidget();
+    this->dbgForms.push_back(form);
     form->setFixedSize(400,400);
     imwrite(dbgSave.toStdString(), image);
     QPixmap pix1(dbgSave);
@@ -28,16 +41,17 @@ void FilteredObject::dbgForm(QString name, Mat image, QString dbgSave)
 float FilteredObject::SEffective()
 {
 
-    float seffpercent = 0.0f;
+    float seffRatio = 0.0f;
     int pixs = this->m_usefulPixs;
     qDebug()<<"pixs = "<<pixs;
 
     qDebug() << "rows = " << this->m_fObjectMatrixSrc.rows << "cols = " << this->m_fObjectMatrixSrc.cols;
-    seffpercent = (float)pixs / (this->m_fObjectMatrixSrc.rows*this->m_fObjectMatrixSrc.cols) * 100;
 
-    qDebug() <<"seffpercent = " <<seffpercent;
+    seffRatio = (float)pixs / (this->m_fObjectMatrixSrc.rows*this->m_fObjectMatrixSrc.cols);
 
-    this->m_SEff = this->m_Smkm * seffpercent;
+    qDebug() <<"seffRatio = " <<seffRatio;
+
+    this->m_SEff = this->m_Smkm * seffRatio;
 
     return this->m_SEff;
 }
@@ -56,7 +70,8 @@ void FilteredObject::preprocessing()
     Mat usefulPixels;
     this->m_fObjectMatrixSrc.copyTo(usefulPixels);
     threshold(usefulPixels, usefulPixels, 0, 255, THRESH_BINARY);
-    this->dbgForm("Useful area", usefulPixels, "/home/daria/wwwm/useful_pixs.jpg");
+    //this->dbgForm("Useful area", usefulPixels, "/home/daria/wwwm/useful_pixs.jpg");
+    this->saveToLocal(usefulPixels, "/home/daria/wwwm/useful_pixs.jpg");
 
     int countPixs = 0;
     for(int i = 0; i < usefulPixels.rows; i++)
@@ -72,10 +87,12 @@ void FilteredObject::preprocessing()
     /*-------------------------------------------------------------------------------------------------*/
 
     this->contrast(this->m_fObjectMatrixSrc, 5.0, 5);
-    this->dbgForm("Source Contrast", this->m_fObjectMatrixSrc, "/home/daria/wwwm/source_contrast.jpg");
+    //this->dbgForm("Source Contrast", this->m_fObjectMatrixSrc, "/home/daria/wwwm/source_contrast.jpg");
+    this->saveToLocal(this->m_fObjectMatrixSrc, "/home/daria/wwwm/source_contrast.jpg");
 
     GaussianBlur(this->m_fObjectMatrixSrc, this->m_fObjectMatrixSrc, Size( 7, 7 ), 0, 0 );
-    this->dbgForm("Gaussian blur", this->m_fObjectMatrixSrc, "/home/daria/wwwm/gau_blur_source.jpg");
+    //this->dbgForm("Gaussian blur", this->m_fObjectMatrixSrc, "/home/daria/wwwm/gau_blur_source.jpg");
+    this->saveToLocal(this->m_fObjectMatrixSrc, "/home/daria/wwwm/gau_blur_source.jpg");
 
     Mat kernel = (Mat_<float>(3,3) <<
                        1,  1, 1,
@@ -88,9 +105,11 @@ void FilteredObject::preprocessing()
          this->m_fObjectMatrixSrc.convertTo(sharp, CV_32F);
          Mat imgResult = sharp - imgLaplacian;
          this->m_fObjectMatrixSrc = imgResult;
-         this->dbgForm("Laplassian sharp", this->m_fObjectMatrixSrc, "/home/daria/wwwm/lapl_sharp_source.jpg");
+         //this->dbgForm("Laplassian sharp", this->m_fObjectMatrixSrc, "/home/daria/wwwm/lapl_sharp_source.jpg");
+         this->saveToLocal(this->m_fObjectMatrixSrc, "/home/daria/wwwm/lapl_sharp_source.jpg");
          medianBlur(this->m_fObjectMatrixSrc,this->m_fObjectMatrixSrc, 3);
-         this->dbgForm("Median blur", this->m_fObjectMatrixSrc, "/home/daria/wwwm/median_blur_source.jpg");
+         //this->dbgForm("Median blur", this->m_fObjectMatrixSrc, "/home/daria/wwwm/median_blur_source.jpg");
+         this->saveToLocal(this->m_fObjectMatrixSrc, "/home/daria/wwwm/median_blur_source.jpg");
           this->m_fObjectMatrixSrc.copyTo(this->m_fObjectMatrixTmp);
 }
 void FilteredObject::postprocessing()
@@ -109,8 +128,8 @@ void FilteredObject::postprocessing()
          this->m_fObjectMatrixDst.convertTo(sharp, CV_32F);
          Mat imgResult = sharp - imgLaplacianDst;
          this->m_fObjectMatrixDst = imgResult;
-         this->dbgForm("Laplassian sharp output", this->m_fObjectMatrixDst, "/home/daria/wwwm/lapl_sharp_out.jpg");
-
+         //this->dbgForm("Laplassian sharp output", this->m_fObjectMatrixDst, "/home/daria/wwwm/lapl_sharp_out.jpg");
+        this->saveToLocal(this->m_fObjectMatrixDst, "/home/daria/wwwm/lapl_sharp_out.jpg");
 
 
 
@@ -122,10 +141,11 @@ void FilteredObject::postprocessing()
 //     this->dbgForm("Canny", this->m_fObjectMatrixDst, "/home/daria/wwwm/dbg6.jpg");
 
      //Бинаризация
-     double thresh = 40;
+     double thresh = 35;
      double maxValue = 255;
      threshold(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, thresh, maxValue, THRESH_BINARY);
-     this->dbgForm("Frangi binary", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi_binary.jpg");
+     //this->dbgForm("Frangi binary", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi_binary.jpg");
+     this->saveToLocal(this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi_binary.jpg");
 
 //     medianBlur(this->m_fObjectMatrixDst,this->m_fObjectMatrixDst, 3);
 //     this->dbgForm("Median blur2", this->m_fObjectMatrixDst, "/home/daria/wwwm/dbg7.jpg");
@@ -274,7 +294,8 @@ float beta = 15.0f;
             sigma += 1;
         }
 
-        this->dbgForm("Frangi", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi.jpg");
+        //this->dbgForm("Frangi", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi.jpg");
+        this->saveToLocal(this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi.jpg");
 
 }
 
@@ -466,6 +487,29 @@ void FilteredObject::distance()
 
 void FilteredObject::visualizeFibers()
 {
+    // Получение выбранных пользователем параметров
+    int max_sz, erode_kern;
+    switch (this->m_maxFiberSize_ind) {
+    case 0: max_sz = 300; break;
+    case 1: max_sz = 350; break;
+    case 2: max_sz = 400; break;
+    case 3: max_sz = 450; break;
+    case 4: max_sz = 500; break;
+    case 5: max_sz = 550; break;
+    case 6: max_sz = 600; break;
+    case 7: max_sz = 650; break;
+    case 8: max_sz = 700; break;
+    default: max_sz = 500; break;
+    }
+
+    switch (this->m_erodeKernel_ind) {
+    case 0: erode_kern = 1; break;
+    case 1: erode_kern = 2; break;
+    case 2: erode_kern = 3; break;
+    case 3: erode_kern = 4; break;
+    case 4: erode_kern = 5; break;
+    default: erode_kern = 3; break;
+    }
     //Бинаризация
     double thresh = 10;
     double maxValue = 255;
@@ -489,16 +533,42 @@ void FilteredObject::visualizeFibers()
          this->dbgForm("BEFORE", copyOfMPath, "/home/daria/wwwm/BEFORE.jpg");
 
 /*---------------------------CHECKING TOO BIG CONTOURS AGAIN--------------------------------------*/
+        qDebug() << "max fiber size: " << max_sz;
+        qDebug() << "erode kernel size: " << erode_kern;
+        Mat element = getStructuringElement( MORPH_RECT,
+                             Size( erode_kern, erode_kern ),
+                             Point( -1, -1 ) );
+        //float step = 0.0f;
+        int N = allCont.size();
+//        if( (N > 0) && (N < 100) )
+//        {
+//            step = 10/N;
+//        }
+//        else if ( (N > 100) && (N < 1000) )
+//        {
+//            step = 100/N;
+//        }
+//        else if ( (N > 1000) && (N < 10000) )
+//        {
+//            step = 1000/N;
+//        }
+//        else
+//            qDebug() << "What the fuck?";
+
+        //qDebug() << "progressRange = " << step;
         for (unsigned long cont = 0; cont < allCont.size(); cont++)
         {
+            int progr = 5 + (float)cont/(N+5)*100;
 
+            qDebug() << "progr = " << progr;
+            emit progress_changed(progr);
             uint8_t first = QRandomGenerator::global()->bounded(0, 255);
             uint8_t second = QRandomGenerator::global()->bounded(0, 255);
             uint8_t third = QRandomGenerator::global()->bounded(0, 255);
             Scalar color(first,second,third);
             Scalar colorRect(0,0,255);
             Scalar colorBlack(0,0,0);
-            int max_sz = 500;
+//            int max_sz = 500;
 
             if (cv::arcLength(allCont.at(cont), true) > max_sz) // если периметр контура слишком большой, проверим его....
                                                                 // может, там скрывается еще один контур...... или два)))))))))
@@ -506,12 +576,9 @@ void FilteredObject::visualizeFibers()
                 qDebug()<< "need to erase" << cont;
                 delete_list.append(cont);
                 drawContours(copyOfMPath, allCont, cont, colorBlack, FILLED);
-                this->dbgForm("DELETE LONG FIBERS FROM SOURCE", copyOfMPath, "/home/daria/wwwm/delete_longf.jpg");
+                //this->dbgForm("DELETE LONG FIBERS FROM SOURCE", copyOfMPath, "/home/daria/wwwm/delete_longf.jpg");
+                this->saveToLocal(copyOfMPath, "/home/daria/wwwm/delete_longf.jpg");
                 //contours.erase(contours.begin()+cont);
-                int erosion_size = 1;
-                Mat element = getStructuringElement( MORPH_RECT,
-                                     Size( erosion_size+2, erosion_size+2 ),
-                                     Point( -1, -1 ) );
 
                 int x1 = boundingRect(allCont.at(cont)).x;
                 int x2 = boundingRect(allCont.at(cont)).x + boundingRect(allCont.at(cont)).width;
@@ -545,7 +612,8 @@ void FilteredObject::visualizeFibers()
                 erode( image_roi, image_roi, element, Point(-1,-1), 1);
 
                 // попробуем сделать из большого контура несколько контуров (нет так нет)
-                this->dbgForm("ERODE ROI", image_roi, "/home/daria/wwwm/pop2.jpg");
+                //this->dbgForm("ERODE ROI", image_roi, "/home/daria/wwwm/pop2.jpg");
+                this->saveToLocal(image_roi, "/home/daria/wwwm/pop2.jpg");
 
                 this->path_opening2();
 
@@ -571,7 +639,8 @@ void FilteredObject::visualizeFibers()
                     drawContours(image_roi, divCont, contdiv, colordiv, FILLED);
                 }
 
-                this->dbgForm("ROI FIXED", image_roi, "/home/daria/wwwm/AFTERpop2.jpg");
+                //this->dbgForm("ROI FIXED", image_roi, "/home/daria/wwwm/AFTERpop2.jpg");
+                this->saveToLocal(image_roi, "/home/daria/wwwm/AFTERpop2.jpg");
 
                 qDebug() << "boundingRect(allCont.at(cont)).width = " << boundingRect(allCont.at(cont)).width << "boundingRect(allCont.at(cont)).height" << boundingRect(allCont.at(cont)).height;
                 // скопируем обработанные волокна обратно на исходное изображение

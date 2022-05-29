@@ -20,6 +20,7 @@
 #include <QQueue>
 #include <QWidget>
 #include <QDebug>
+#include <QObject>
 extern "C" {
     #include "pde_toolbox_bimage.h"
     #include "pde_toolbox_defs.h"
@@ -33,10 +34,13 @@ extern "C" {
 
 using namespace cv;
 
-class FilteredObject
+class FilteredObject : public QObject
 {
+    Q_OBJECT
 public:
     FilteredObject();
+    void saveToLocal(Mat image, QString dbgSave);
+    void clear();
     String m_fObjectURL;
     String m_fObjectPathURL;
 
@@ -131,8 +135,24 @@ public:
     {
         m_relnumberOfCont = numb;
     }
+    void SETerodeKernel(int kern_ind)
+    {
+        m_erodeKernel_ind = kern_ind;
+    }
+    void SETmaxFiberSize(int sz_ind)
+    {
+        m_maxFiberSize_ind = sz_ind;
+    }
+
+signals:
+    void progress_changed(int progr);
 
 private:
+    QVector<QWidget*> dbgForms;
+    // erode kernel size
+    int m_erodeKernel_ind;
+    // max fiber size
+    int m_maxFiberSize_ind;
     // белые пиксели исходного изображения
     int m_usefulPixs;
     // эффективная площадь
