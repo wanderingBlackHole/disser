@@ -27,6 +27,8 @@ private slots:
 //public slots:
 //    void on_progress_changed(int progr);
 
+    void on_downloadFolderButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     FilteredObject *m_object = nullptr;

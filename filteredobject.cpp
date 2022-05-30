@@ -141,7 +141,7 @@ void FilteredObject::postprocessing()
 //     this->dbgForm("Canny", this->m_fObjectMatrixDst, "/home/daria/wwwm/dbg6.jpg");
 
      //Бинаризация
-     double thresh = 35;
+     double thresh = 27;
      double maxValue = 255;
      threshold(this->m_fObjectMatrixDst, this->m_fObjectMatrixDst, thresh, maxValue, THRESH_BINARY);
      //this->dbgForm("Frangi binary", this->m_fObjectMatrixDst, "/home/daria/wwwm/frangi_binary.jpg");
@@ -390,7 +390,7 @@ void FilteredObject::path_opening()
         input_image[i] = static_cast<PATHOPEN_PIX_TYPE>(input_bimage->buf[i]);
     }
 
-    int L = 27;
+    int L = 30;
     int K = 0;
 
    pathopen(input_image, nx, ny, L, K, output_image);
@@ -453,7 +453,7 @@ void FilteredObject::path_opening2()
         input_image[i] = static_cast<PATHOPEN_PIX_TYPE>(input_bimage->buf[i]);
     }
 
-    int L = 27;
+    int L = 30;
     int K = 0;
 
    pathopen(input_image, nx, ny, L, K, output_image);
@@ -707,6 +707,7 @@ void FilteredObject::visualizeFibers()
 
 
         float s = this->SEffective();
+        qDebug() << "s = " <<s;
         float relNumb = numberOfContours/s;
         qDebug() << "number of fibers = " << numberOfContours;
         qDebug() << "relative number of bibers = " << relNumb;
